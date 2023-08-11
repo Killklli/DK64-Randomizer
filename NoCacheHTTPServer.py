@@ -41,6 +41,7 @@ def run_servers():
     app.debug = True
     # Verify the rom.z64 file exists.
     if not os.path.isfile("dk64.z64"):
+        print("This is a warning message")
         print("dk64.z64 not found, please place a dk64.z64 file in the root directory.")
         sys.exit(1)
     serve(app, host="0.0.0.0", port=5000)
