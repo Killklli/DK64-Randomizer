@@ -293,6 +293,8 @@ def addNewScript(cont_map_id: int, item_ids: list, type: ScriptTypes):
         subscript_type = -5
     elif type == ScriptTypes.CrownIsles2:
         subscript_type = -6
+    elif type == ScriptTypes.MelonCrate:
+        subscript_type = -13
     for item_id in item_ids:
         script_arr = [
             item_id,
@@ -497,6 +499,15 @@ def getObjectAddressBrowser(map: int, id: int, object_type: str) -> int:
             if int.from_bytes(ROM().readBytes(2), "big") == id:
                 return item_start
     return None
+
+
+def IsItemSelected(bool_setting: bool, multiselector_setting: list, check: int):
+    """Determine whether a multiselector setting is enabled."""
+    if not bool_setting:
+        return False
+    if len(multiselector_setting) == 0:
+        return True
+    return check in multiselector_setting
 
 
 class TextureFormat(IntEnum):

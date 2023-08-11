@@ -318,3 +318,35 @@ void initBarrelChange(void) {
     *(int*)(0x8074DA44) = (int)&SpawnBarrel;
     writeFunction(0x80689368, &SpawnPreSpawnedBarrel); // Change model if barrel is being reloaded
 }
+
+void melonCrateItemHandler(behaviour_data* behaviour_pointer, int index, int p1, int p2) {
+    int id = ObjectModel2Pointer[convertSubIDToIndex(index)].object_id;
+    int flag = getCrateFlag(id);
+    int spawn_count = 1;
+    int object = getCrateItem(flag);
+    int cutscene = 1;
+    if (object == 0x2F) {
+        // Junk Item. Set flag as we're spawning 4 unflagged melons and we want it to update check screen
+        setFlag(flag, 1, FLAGTYPE_PERMANENT);
+    }
+    if (checkFlag(flag, FLAGTYPE_PERMANENT) || (object == (CUSTOM_ACTORS_START + NEWACTOR_NULL))) {
+        spawn_count = 4;
+        flag = -1;
+        object = 0x2F;
+        cutscene = 1;
+    } else {
+        for (int i = 0; i < (int)(sizeof(bounce_objects)/2); i++) {
+            if (object == bounce_objects[i]) {
+                cutscene = 2;
+            }
+        }
+    }
+    float x = collisionPos[0];
+    float y = collisionPos[1] + 15.0f;
+    float z = collisionPos[2];
+    for (int i = 0; i < spawn_count; i++) {
+        spawnActorWithFlag(object, *(int*)(&x), *(int*)(&y), *(int*)(&z), 0x400 * i, cutscene, flag, 0);
+    }
+    unkSpriteRenderFunc_1(1);
+    displaySpriteAtXYZ(sprite_table[31], 0x40200000, x, y + 15.0f, z);
+}

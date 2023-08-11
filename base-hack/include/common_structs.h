@@ -95,7 +95,8 @@ typedef struct actorData {
 	/* 0x0C4 */ float yAccel;
 	/* 0x0C8 */ char unk_C8[0xCC-0xC8];
 	/* 0x0CC */ char unk_CC;
-	/* 0x0CD */ char unk_CD[0xE6-0xCD];
+	/* 0x0CD */ char unk_CD[0xE4-0xCD];
+	/* 0x0E4 */ short rot_x;
 	/* 0x0E6 */ short rot_y;
 	/* 0x0E8 */ short rot_z;
 	/* 0x0EA */ char unk_EA[0x4];
@@ -214,7 +215,9 @@ typedef struct playerData {
 	/* 0x128 */ short strong_kong_value;
 	/* 0x12A */ char unk_12A[2];
 	/* 0x12C */ short chunk;
-	/* 0x12E */ char unk_12E[0x13C - 0x12E];
+	/* 0x12E */ char unk_12E[0x132 - 0x12E];
+	/* 0x132 */ short unk_132;
+	/* 0x134 */ char unk_134[0x13C - 0x134];
 	/* 0x13C */ int* collision_queue_pointer;
 	/* 0x140 */ bonedata* bone_data;
 	/* 0x144 */ char noclip;
@@ -1536,3 +1539,44 @@ typedef struct Controller {
 	/* 0x002 */ char stickX;
 	/* 0x003 */ char stickY;
 } Controller;
+
+typedef struct Border {
+	/* 0x000 */ char player_count;
+	/* 0x001 */ char unk1;
+	/* 0x002 */ char unk2;
+	/* 0x003 */ char unk3;
+	/* 0x004 */ short blackness_left;
+	/* 0x006 */ short blackness_top;
+	/* 0x008 */ short blackness_right;
+	/* 0x00A */ short blackness_bottom;
+} Border;
+
+typedef struct DisabledMusicStruct {
+	unsigned char wrinkly : 1; // 0x80
+	unsigned char shops : 1; // 0x40
+	unsigned char events : 1; // 0x20
+	unsigned char transform : 1; // 0x10
+	unsigned char pause : 1; // 0x08
+	unsigned char chunk_songs : 1; // 0x04
+	unsigned char unk6 : 1; // 0x02
+	unsigned char unk7 : 1; // 0x01
+} DisabledMusicStruct;
+
+typedef struct SeedOfDeathSettings {
+	unsigned char easy_fall : 1; // 0x80
+	unsigned char lava_water : 1; // 0x40
+	unsigned char bosses : 1; // 0x20
+	unsigned char enemies : 1; // 0x10
+	unsigned char unk4 : 1; // 0x08
+	unsigned char unk5 : 1; // 0x04
+	unsigned char unk6 : 1; // 0x02
+	unsigned char unk7 : 1; // 0x01
+} SeedOfDeathSettings;
+
+typedef struct SurfaceInfo {
+	/* 0x000 */ void* texture_loader;
+	/* 0x004 */ void* dl_writer;
+	/* 0x008 */ void* ripple_handler;
+	/* 0x00C */ void* textures[2];
+	/* 0x014 */ unsigned char unk14[4];
+} SurfaceInfo;

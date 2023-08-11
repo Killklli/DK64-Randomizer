@@ -24,7 +24,7 @@ LogicRegions = {
         LocationLogic(Locations.CastleDiddyAboveCastle, lambda l: l.jetpack and l.isdiddy, MinigameType.BonusBarrel),
         LocationLogic(Locations.CastleKasplatHalfway, lambda l: not l.settings.kasplat_rando),
         LocationLogic(Locations.CastleKasplatLowerLedge, lambda l: not l.settings.kasplat_rando),
-        LocationLogic(Locations.RainbowCoin_Location11, lambda l: l.shockwave),
+        LocationLogic(Locations.RainbowCoin_Location11, lambda l: True),
     ], [
         Event(Events.CastleEntered, lambda l: True),
         Event(Events.CastleW1aTagged, lambda l: True),
@@ -157,6 +157,7 @@ LogicRegions = {
 
     Regions.LowerCave: Region("Lower Cave", "Castle Underground", Levels.CreepyCastle, True, -1, [
         LocationLogic(Locations.CastleKasplatCrypt, lambda l: not l.settings.kasplat_rando),
+        LocationLogic(Locations.MelonCrate_Location12, lambda l: True),
     ], [], [
         TransitionFront(Regions.CreepyCastleMedals, lambda l: True),
         TransitionFront(Regions.CreepyCastleMain, lambda l: True, Transitions.CastleLowerToMain),

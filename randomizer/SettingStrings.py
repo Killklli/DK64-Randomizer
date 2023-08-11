@@ -14,6 +14,7 @@ from randomizer.Enums.Settings import (
     SettingsStringIntRangeMap,
     SettingsStringListTypeMap,
     SettingsStringTypeMap,
+    SpoilerHints,
 )
 
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -108,6 +109,33 @@ settingsExclusionMap = {
     "logic_type": {LogicType.glitchless: ["glitches_selected"], LogicType.nologic: ["glitches_selected"]},
     "select_keys": {False: ["starting_keys_list_selected"], True: ["krool_key_count"]},
     "quality_of_life": {False: ["misc_changes_selected"]},
+    "hard_mode": {False: ["hard_mode_selected"]},
+    "spoiler_hints": {
+        SpoilerHints.off: [
+            "points_list_kongs"
+            "points_list_keys"
+            "points_list_guns"
+            "points_list_instruments"
+            "points_list_training_moves"
+            "points_list_important_shared"
+            "points_list_pad_moves"
+            "points_list_barrel_moves"
+            "points_list_active_moves"
+            "points_list_bean"
+        ],
+        SpoilerHints.vial_colors: [
+            "points_list_kongs"
+            "points_list_keys"
+            "points_list_guns"
+            "points_list_instruments"
+            "points_list_training_moves"
+            "points_list_important_shared"
+            "points_list_pad_moves"
+            "points_list_barrel_moves"
+            "points_list_active_moves"
+            "points_list_bean"
+        ],
+    },
 }
 
 
@@ -174,9 +202,11 @@ def encrypt_settings_string_enum(dict_data: dict):
         "camera_is_follow",
         "sfx_volume",
         "music_volume",
-        "camera_is_widescreen",
+        "true_widescreen",
         "camera_is_not_inverted",
         "sound_type",
+        "songs_excluded",
+        "excluded_songs_selected",
     ]:
         if pop in dict_data:
             dict_data.pop(pop)
@@ -185,7 +215,7 @@ def encrypt_settings_string_enum(dict_data: dict):
     for key in dict_data:
         value = dict_data[key]
         # At this time, all strings represent ints, so just convert.
-        if type(value) == str:
+        if isinstance(value, str):
             value = int(value)
         key_enum = SettingsStringEnum[key]
         key_data_type = SettingsStringTypeMap[key_enum]
@@ -206,7 +236,7 @@ def encrypt_settings_string_enum(dict_data: dict):
             bitstring += f"{len(value):08b}"
             key_list_data_type = SettingsStringListTypeMap[key_enum]
             for item in value:
-                if type(item) == str:
+                if isinstance(item, str):
                     item = int(item)
                 if key_list_data_type == SettingsStringDataType.bool:
                     bitstring += "1" if item else "0"

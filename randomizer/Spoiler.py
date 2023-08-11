@@ -12,9 +12,23 @@ from randomizer.Enums.Levels import Levels
 from randomizer.Enums.Locations import Locations
 from randomizer.Enums.MoveTypes import MoveTypes
 from randomizer.Enums.Regions import Regions
-from randomizer.Enums.Settings import BananaportRando, GlitchesSelected, HelmDoorItem, LogicType, MinigameBarrels, RandomPrices, ShockwaveStatus, ShuffleLoadingZones, TrainingBarrels, WinCondition
+from randomizer.Enums.Settings import (
+    BananaportRando,
+    GlitchesSelected,
+    HardModeSelected,
+    HelmDoorItem,
+    LogicType,
+    MinigameBarrels,
+    RandomPrices,
+    ShockwaveStatus,
+    ShuffleLoadingZones,
+    SpoilerHints,
+    TrainingBarrels,
+    WinCondition,
+)
 from randomizer.Enums.Transitions import Transitions
 from randomizer.Enums.Types import Types
+from randomizer.Lists.EnemyTypes import EnemyMetaData
 from randomizer.Lists.Item import ItemFromKong, ItemList, KongFromItem, NameFromKong
 from randomizer.Lists.Location import LocationList, PreGivenLocations
 from randomizer.Lists.Logic import GlitchLogicItems
@@ -23,6 +37,7 @@ from randomizer.Lists.Minigame import BarrelMetaData, HelmMinigameLocations, Min
 from randomizer.Prices import ProgressiveMoves
 from randomizer.Settings import Settings
 from randomizer.ShuffleExits import ShufflableExits
+from randomizer.ShuffleBosses import HardBossesEnabled
 
 
 class Spoiler:
@@ -106,6 +121,7 @@ class Spoiler:
             Types.RainbowCoin: "Rainbow Coins",
             Types.FakeItem: "Ice Traps",
             Types.JunkItem: "Junk Items",
+            Types.CrateItem: "Melon Crates",
         }
         if item_type in type_dict:
             return type_dict[item_type]
@@ -149,11 +165,11 @@ class Spoiler:
         settings["Auto Complete Bonus Barrels"] = self.settings.bonus_barrel_auto_complete
         settings["Complex Level Order"] = self.settings.hard_level_progression
         settings["Progressive Switch Strength"] = self.settings.alter_switch_allocation
-        settings["Hard Bosses"] = self.settings.hard_bosses
         settings["Hard Shooting"] = self.settings.hard_shooting
         settings["Free Trade Agreement"] = self.settings.free_trade_setting.name
         settings["Randomize Pickups"] = self.settings.randomize_pickups
         settings["Randomize Patches"] = self.settings.random_patches
+        settings["Randomize Crates"] = self.settings.random_crates
         settings["Randomize CB Locations"] = self.settings.cb_rando
         settings["Randomize Coin Locations"] = self.settings.coin_rando
         settings["Puzzle Randomization"] = self.settings.puzzle_rando
@@ -188,6 +204,14 @@ class Spoiler:
             settings["Game Mode"] = "Helm Hurry"
         humanspoiler["Settings"] = settings
         humanspoiler["Cosmetics"] = {}
+        if self.settings.spoiler_hints != SpoilerHints.off:
+            humanspoiler["Spoiler Hints Data"] = {}
+            for key in self.level_spoiler.keys():
+                if key == "point_spread":
+                    humanspoiler["Spoiler Hints Data"][key] = json.dumps(self.level_spoiler[key])
+                else:
+                    humanspoiler["Spoiler Hints Data"][key] = self.level_spoiler[key].toJSON()
+            humanspoiler["Spoiler Hints"] = self.level_spoiler_human_readable
         humanspoiler["Requirements"] = {}
         if self.settings.random_starting_region:
             humanspoiler["Game Start"] = {}
@@ -262,6 +286,7 @@ class Spoiler:
             "Rainbow Coins": {},
             "Ice Traps": {},
             "Junk Items": {},
+            "Melon Crates": {},
             "Empty": {},
             "Unknown": {},
         }
@@ -442,6 +467,15 @@ class Spoiler:
                 "Crystal Caves": self.settings.switch_allocation[Levels.CrystalCaves],
                 "Creepy Castle": self.settings.switch_allocation[Levels.CreepyCastle],
             }
+        if self.settings.enemy_rando:
+            placement_dict = {}
+            for map_id in self.enemy_rando_data:
+                map_name = Maps(map_id).name
+                map_dict = {}
+                for enemy in self.enemy_rando_data[map_id]:
+                    map_dict[enemy["location"]] = EnemyMetaData[enemy["enemy"]].name
+                placement_dict[map_name] = map_dict
+            humanspoiler["Enemy Placement"] = placement_dict
         humanspoiler["Bosses"] = {}
         if self.settings.boss_location_rando:
             shuffled_bosses = OrderedDict()
@@ -469,7 +503,7 @@ class Spoiler:
                 kutout_order = kutout_order + Kongs(kong).name.capitalize() + ", "
             humanspoiler["Bosses"]["King Kut Out Properties"]["Shuffled Kutout Kong Order"] = kutout_order
 
-        if self.settings.hard_bosses:
+        if HardBossesEnabled(self.settings):
             phase_names = []
             for phase in self.settings.kko_phase_order:
                 phase_names.append(f"Phase {phase+1}")
@@ -497,6 +531,8 @@ class Spoiler:
             humanspoiler["Shuffled Banana Fairies"] = self.fairy_locations_human
         if self.settings.random_patches:
             humanspoiler["Shuffled Dirt Patches"] = self.human_patches
+        if self.settings.random_crates:
+            humanspoiler["Shuffled Melon Crates"] = self.human_crates
         if self.settings.bananaport_rando != BananaportRando.off:
             shuffled_warp_levels = [x.name for x in self.settings.warp_level_list_selected]
             humanspoiler["Shuffled Bananaport Levels"] = shuffled_warp_levels

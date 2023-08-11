@@ -137,6 +137,7 @@ extern int unkObjFunction12(int id, int unk0, int unk1, int unk2, int unk3, floa
 extern void unkObjFunction13(int unk0, int unk1, int unk2);
 extern void unkObjFunction14(int unk0);
 extern void unkObjFunction15(int unk0, int x, int y, int z);
+extern void unkObjFunction16(int unk0, int unk1, short* unk2, float* unk3, char* unk4);
 
 extern int touchingModel2Object(int id);
 extern int GetKongUnlockedFlag(int actor_type, int kong_index);
@@ -298,6 +299,7 @@ extern void calculateScreenPosition(float x, float y, float z, float* x_store, f
 extern int getNewSaveTime(void);
 extern void unkBonusFunction(actorData* actor);
 extern void internalKasplatCode(int has_bp);
+extern void drawRetroSprite(void* unk0, int x, int y);
 
 extern void spriteActorGenericCode(float unk0);
 extern void assignGIFToActor(void* paad, void* sprite, int scale_f);
@@ -365,6 +367,13 @@ extern void setIntroStoryPlaying(int value);
 extern void alterSFXVolume(int channel, int volume);
 extern void alterMusicVolume(int channel);
 extern void adjustSFXType_Internal(int subtype);
+
+extern void runAnimFrame(actorData* actor, int anim, int unk0, float unk1);
+extern int getTrackChannel(int song);
+extern void handleTextScrolling(void* menu_aad, float x1, float y1, float* x2, float* y2, int unk0, int unk1, float unk2);
+
+extern void handlePoleGrabbing(void* actor, int player_index, int allow_vines);
+extern void unkCutsceneFunction(void* actor);
 
 //vanilla data
 extern float TransitionSpeed;
@@ -650,6 +659,13 @@ extern rgb BlueprintLargeImageColors[16];
 extern char SFXVolume;
 extern char MusicVolume;
 
+extern Border BorderInformation[22];
+extern void* JetpacEnemyFunctions[8];
+extern SurfaceInfo SurfaceTypeInformation[9];
+
+extern unsigned char unkSoundIndex;
+extern short unkSoundArray[0x10];
+
 //hack data
 extern int TestVariable;
 extern char LoadedHooks;
@@ -672,8 +688,7 @@ extern purchase_struct FunkyMoves_New[5][8];
 extern purchase_struct TrainingMoves_New[4];
 extern purchase_struct BFIMove_New;
 extern settingsData StoredSettings;
-extern char WarpToIslesEnabled;
-extern char permaLossMode;
+extern char WidescreenEnabled;
 extern char preventTagSpawn;
 extern char bonusAutocomplete;
 extern void* StoredCounterTextures[7];

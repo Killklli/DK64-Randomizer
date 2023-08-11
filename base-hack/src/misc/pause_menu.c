@@ -40,17 +40,6 @@ int* printLevelIGT(int* dl, int x, int y, float scale, char* str) {
     return dl;
 }
 
-/*
-        0 = GB
-        1 = Crown
-        2 = Keys
-        3 = Medals
-        4 = RW Coin
-        5 = Fairies
-        6 = N Coin
-        7 = Blueprints
-    */
-
 static char* levels[] = {
     "ALL",
     "JUNGLE JAPES",
@@ -76,6 +65,7 @@ static char* items[] = {
     "ANTHILL SECOND REWARD",
     "TREASURE CHEST CLAMS",
     "DIRT PATCHES",
+    "MELON CRATES",
 };
 static char* raw_items[] = {
     "GOLDEN BANANAS",
@@ -90,6 +80,7 @@ static char* raw_items[] = {
     "BEAN",
     "PEARLS",
     "RAINBOW COINS",
+    "JUNK ITEMS",
 };
 
 static char check_level = 0;
@@ -97,23 +88,7 @@ static char hint_level = 0;
 static char level_check_text[0x18] = "";
 static char level_hint_text[0x18] = "";
 
-#define CHECK_GB 0
-#define CHECK_CROWN 1
-#define CHECK_KEY 2
-#define CHECK_MEDAL 3
-#define CHECK_RWCOIN 4
-#define CHECK_FAIRY 5
-#define CHECK_NINCOIN 6
-#define CHECK_BP 7
-#define CHECK_KONG 8
-#define CHECK_BEAN 9
-#define CHECK_PEARLS 10
-#define CHECK_RAINBOW 11
-
-#define PAUSE_ITEM_COUNT 12
-#define ROTATION_SPLIT 341 // 0x1000 / PAUSE_ITEM_COUNT
-
-static unsigned char check_data[2][9][PAUSE_ITEM_COUNT] = {}; // 8 items, 9 levels, numerator + denominator
+static unsigned char check_data[2][9][CHECK_TERMINATOR] = {}; // 8 items, 9 levels, numerator + denominator
 
 static char hints_initialized = 0;
 
@@ -149,7 +124,7 @@ void checkItemDB(void) {
             stored_igt = IGT;
         }
     }
-    for (int i = 0; i < PAUSE_ITEM_COUNT; i++) {
+    for (int i = 0; i < CHECK_TERMINATOR; i++) {
         // Wipe data upon every search
         for (int j = 0; j < 9; j++) {
             check_data[0][j][i] = 0;
@@ -170,34 +145,41 @@ void checkItemDB(void) {
                 int lvl = getPatchWorld(k);
                 check_data[0][lvl][i] += checkFlag(search_flag, FLAGTYPE_PERMANENT);
             }
+        } else if (i == CHECK_CRATE) {
+            for (int k = 0; k < 13; k++) {
+                int search_flag = FLAG_MELONCRATE_0 + k;
+                int lvl = getCrateWorld(k);
+                check_data[0][lvl][i] += checkFlag(search_flag, FLAGTYPE_PERMANENT);
+            }
         }
         // Get Denominator
         for (int j = 0; j < 9; j++) {
+            int denominator = 0;
             switch (i) {
                 case CHECK_GB:
                     if (j < 8) {
                         if (j == 7) {
-                            check_data[1][j][CHECK_GB] = 21;
+                            denominator = 21;
                         } else {
-                            check_data[1][j][CHECK_GB] = 20;
+                            denominator = 20;
                         }
                     }
                     break;
                 case CHECK_CROWN:
                     if (j == 7) {
-                        check_data[1][j][CHECK_CROWN] = 2;
+                        denominator = 2;
                     } else {
-                        check_data[1][j][CHECK_CROWN] = 1;
+                        denominator = 1;
                     }
                     break;
                 case CHECK_KEY:
                     if (j != 7) {
-                        check_data[1][j][CHECK_KEY] = 1;
+                        denominator = 1;
                     }
                     break;
                 case CHECK_MEDAL:
                     if (j != 7) {
-                        check_data[1][j][CHECK_MEDAL] = 5;
+                        denominator = 5;
                     }
                     break;
                 case CHECK_RWCOIN:
@@ -206,14 +188,14 @@ void checkItemDB(void) {
                     break;
                 case CHECK_FAIRY:
                     if (j == 7) {
-                        check_data[1][j][CHECK_FAIRY] = 4;
+                        denominator = 4;
                     } else {
-                        check_data[1][j][CHECK_FAIRY] = 2;
+                        denominator = 2;
                     }
                     break;
                 case CHECK_BP:
                     if (j < 8) {
-                        check_data[1][j][CHECK_BP] = 5;
+                        denominator = 5;
                     }
                     break;
                 case CHECK_KONG:
@@ -221,32 +203,30 @@ void checkItemDB(void) {
                     break;
                 case CHECK_BEAN:
                     if (j == 4) {
-                        check_data[1][j][CHECK_BEAN] = 1;
+                        denominator = 1;
                     }
                     break;
                 case CHECK_PEARLS:
                     if (j == 3) {
-                        check_data[1][j][CHECK_PEARLS] = 5;
+                        denominator = 5;
                     }
                     break;
                 case CHECK_RAINBOW:
-                    if (!Rando.item_rando) {
-                        if (j == 7) {
-                            check_data[1][j][CHECK_RAINBOW] = 7;
-                        } else if ((j == 1) || (j == 4)) {
-                            check_data[1][j][CHECK_RAINBOW] = 2;
-                        } else {
-                            check_data[1][j][CHECK_RAINBOW] = 1;
+                    for (int k = 0; k < 16; k++) {
+                        if (getPatchWorld(k) == j) {
+                            denominator += 1;
                         }
-                    } else {
-                        for (int k = 0; k < 16; k++) {
-                            if ((getPatchWorld(k) == j) && (j < 8)) {
-                                check_data[1][j][CHECK_RAINBOW] += 1;
-                            }
+                    }
+                    break;
+                case CHECK_CRATE:
+                    for (int k = 0; k < 13; k++) {
+                        if (getCrateWorld(k) == j) {
+                            denominator += 1;
                         }
                     }
                 break;
             }
+            check_data[1][j][i] = denominator;
         }
     }
 }
@@ -261,7 +241,11 @@ int* drawHintText(int* dl, char* str, int x, int y) {
     _guScaleF(&mtx0, 0x3F19999A, 0x3F19999A, 0x3F800000);
     float position = y;
     int pos_f = *(int*)&position;
-    _guTranslateF(&mtx1, 0x44200000, pos_f, 0x0);
+    float hint_x = 640.0f;
+    if (Rando.true_widescreen) {
+        hint_x = SCREEN_WD_FLOAT * 2;
+    }
+    _guTranslateF(&mtx1, *(int*)(&hint_x), pos_f, 0x0);
     _guMtxCatF(&mtx0, &mtx1, &mtx0);
     _guTranslateF(&mtx1, 0, 0x42400000, 0);
     _guMtxCatF(&mtx0, &mtx1, &mtx0);
@@ -341,23 +325,27 @@ int* pauseScreen3And4Header(int* dl) {
      */
     pause_paad* paad = CurrentActorPointer_0->paad;
     display_billboard_fix = 0;
+    int level_x = 0x280;
+    if (Rando.true_widescreen) {
+        level_x = SCREEN_WD * 2;
+    }
     if (paad->screen == PAUSESCREEN_TOTALS) {
-        return printText(dl, 0x280, 0x3C, 0.65f, "TOTALS");
+        return printText(dl, level_x, 0x3C, 0.65f, "TOTALS");
     } else if (paad->screen == PAUSESCREEN_CHECKS) {
-        dl = printText(dl, 0x280, 0x3C, 0.65f, "CHECKS");
+        dl = printText(dl, level_x, 0x3C, 0.65f, "CHECKS");
         dk_strFormat((char*)level_check_text, "w %s e", levels[(int)check_level]);
-        return printText(dl, 0x280, 160, 0.5f, level_check_text);
+        return printText(dl, level_x, 160, 0.5f, level_check_text);
     } else if (paad->screen == PAUSESCREEN_MOVES) {
         dl = display_file_images(dl, -50);
         int igt_h = stored_igt / 3600;
         int igt_s = stored_igt % 60;
         int igt_m = (stored_igt / 60) % 60;
         dk_strFormat((char*)igt_text, "%03d:%02d:%02d", igt_h, igt_m, igt_s);
-        dl = printText(dl, 0x280, 675, 0.5f, igt_text);
-        return printText(dl, 0x280, 0x3C, 0.65f, "MOVES");
+        dl = printText(dl, level_x, 675, 0.5f, igt_text);
+        return printText(dl, level_x, 0x3C, 0.65f, "MOVES");
     } else if (paad->screen == PAUSESCREEN_HINTS) {
         display_billboard_fix = 1;
-        dl = printText(dl, 0x280, 0x3C, 0.65f, "HINTS");
+        dl = printText(dl, level_x, 0x3C, 0.65f, "HINTS");
         // Handle Controls
         int hint_level_cap = 7;
         if (NewlyPressedControllerInput.Buttons.c_left) {
@@ -373,17 +361,21 @@ int* pauseScreen3And4Header(int* dl) {
         }
         // Display level
         dk_strFormat((char*)level_hint_text, "w %s e", levels[(int)hint_level + 1]);
-        dl = printText(dl, 0x280, 120, 0.5f, level_hint_text);
+        dl = printText(dl, level_x, 120, 0.5f, level_hint_text);
         // Display Hints
         *(unsigned int*)(dl++) = 0xFA000000;
         *(unsigned int*)(dl++) = 0xFFFFFF96;
-        dl = displayImage(dl, 107, 0, RGBA16, 48, 32, 625, 465, 24.0f, 20.0f, 0, 0.0f);
+        int bubble_x = 625;
+        if (Rando.true_widescreen) {
+            bubble_x = (2 * SCREEN_WD) - 15;
+        }
+        dl = displayImage(dl, 107, 0, RGBA16, 48, 32, bubble_x, 465, 24.0f, 20.0f, 0, 0.0f);
         mtx_counter = 0;
         for (int i = 0; i < 5; i++) {
             if (checkFlag(FLAG_WRINKLYVIEWED + (5 * hint_level) + i, FLAGTYPE_PERMANENT)) {
-                dl = drawSplitString(dl, (char*)hint_pointers[(5 * hint_level) + i], 640, 140 + (120 * i), 40);
+                dl = drawSplitString(dl, (char*)hint_pointers[(5 * hint_level) + i], level_x, 140 + (120 * i), 40);
             } else {
-                dl = drawSplitString(dl, "???", 640, 140 + (120 * i), 40);
+                dl = drawSplitString(dl, "???", level_x, 140 + (120 * i), 40);
             }
             
         }
@@ -458,38 +450,57 @@ void changePauseScreen(void) {
     playSFX(0x2C9);
 }
 
-void updatePauseScreenWheel(void* write_location, void* sprite, int x, int y, float scale, int local_index, int index) {
+void updatePauseScreenWheel(pause_paad* write_location, void* sprite, int x, int y, float scale, int local_index, int index) {
     /**
      * @brief Update the pause screen wheel to be a carousel instead.
      */
-    displaySprite(write_location, sprite, local_index, 0x78, 1.0f, 2, 16);
+    int control = 16;
+    ItemsInWheel = CHECK_TERMINATOR - ROTATION_TOTALS_REDUCTION;
+    if (write_location->screen == PAUSESCREEN_CHECKS) {
+        control = 17;
+        ItemsInWheel = CHECK_TERMINATOR;
+    }
+    if (local_index >= ItemsInWheel) {
+        return;
+    }
+    displaySprite(write_location, sprite, local_index, 0x78, 1.0f, 2, control);
 }
 
-void newPauseSpriteCode(sprite_struct* sprite, char* render) {
+void newPauseSpriteCode(sprite_struct* sprite, char* render, int is_totals) {
     /**
      * @brief Sprite code for the carousel pause screen effect
      */
     spriteControlCode(sprite, render);
     pause_paad* pause_control = (pause_paad*)sprite->control;
-    // float opacity_scale = 1.0f;
-    // float test_opacity = (pause_control->unkC[(int)sprite->unk384[1]] * 4) - pause_control->unk0;
-    // if (test_opacity < 0.0f) {
-    //     test_opacity = 0.0f;
-    // }
-    // if (test_opacity <= 1.0f) {
-    //     opacity_scale = test_opacity;
-    // }
-    // sprite->alpha = opacity_scale * 255.0f;
+    // Define Rotaion Parameters
+    int rotation = ROTATION_SPLIT;
+    int item_cap = CHECK_TERMINATOR;
+    if (is_totals) {
+        rotation = ROTATION_SPLIT_TOTALS;
+        // item_cap = CHECK_TERMINATOR - ROTATION_TOTALS_REDUCTION;
+    }
+    // Width information
+    float width = 640.0f;
+    if (Rando.true_widescreen) {
+        width = SCREEN_WD_FLOAT * 2;
+        sprite->y = SCREEN_HD_FLOAT * 2;
+    }
+    float right_bound = width * 1.5f;
+    float left_bound = width * 0.5f;
+    float quarter_width = width / 4.0f;
+    float width_diff = width / 8.0f;
+    int width_diff_int = width_diff;
+
     int index = sprite->unk384[2] / 4;
-    int viewed_item = ((float)(pause_control->control) / ROTATION_SPLIT);
+    int viewed_item = ((float)(pause_control->control) / rotation);
     int diff = index - viewed_item;
-    if (diff == (PAUSE_ITEM_COUNT - 1)) {
+    if (diff == (item_cap - 1)) {
         diff = -1;
-    } else if (diff == (PAUSE_ITEM_COUNT - 2)) {
+    } else if (diff == (item_cap - 2)) {
         diff = -2;
-    } else if (diff == (1 - PAUSE_ITEM_COUNT)) {
+    } else if (diff == (1 - item_cap)) {
         diff = 1;
-    } else if (diff == (2 - PAUSE_ITEM_COUNT)) {
+    } else if (diff == (2 - item_cap)) {
         diff = 2;
     }
     int pos_diff = diff;
@@ -498,36 +509,38 @@ void newPauseSpriteCode(sprite_struct* sprite, char* render) {
     } else  if (pos_diff < 0) {
         pos_diff -= 1;
     }
-    float diff_increment = ((pause_control->control - (ROTATION_SPLIT * viewed_item)) * 80 * PAUSE_ITEM_COUNT) >> 12;
+    float diff_increment = ((pause_control->control - (rotation * viewed_item)) * width_diff_int * item_cap) >> 12;
     if ((pos_diff >= 3) || (pos_diff <= -2)) {
         diff_increment /= 2;
     }
-    sprite->x = (0xA0 + (pos_diff * 0x28) - diff_increment) * 4;
+    
+
+    sprite->x = (quarter_width + (pos_diff * (width_diff / 2.0f)) - diff_increment) * 4;
     float scale = 0.0f;
-    if (sprite->x > 640.0f) {
+    if (sprite->x > width) {
         // Right of center
-        if (sprite->x < 960.0f) {
+        if (sprite->x < right_bound) {
             // 8-4
-            float x_diff = 640.f - sprite->x;
-            scale = 8.0f + (x_diff / 80.0f);
+            float x_diff = width - sprite->x;
+            scale = 8.0f + (x_diff / width_diff);
         } else {
             // 4-2-0
-            float x_diff = 960.0f - sprite->x;
-            scale = 4.0f + (x_diff / 80.0f);
+            float x_diff = right_bound - sprite->x;
+            scale = 4.0f + (x_diff / width_diff);
             if (scale < 0.0f) {
                 scale = 0.0f;
             }
         }
-    } else if (sprite->x < 640.0f) {
+    } else if (sprite->x < width) {
         // Left of center
-        if (sprite->x > 320.0f) {
+        if (sprite->x > left_bound) {
             // 4-8
-            float x_diff = 640.0f - sprite->x;
-            scale = 8.0f - (x_diff / 80.0f);
+            float x_diff = width - sprite->x;
+            scale = 8.0f - (x_diff / width_diff);
         } else {
             // 0-2-4
-            float x_diff = 320.0f - sprite->x;
-            scale = 4.0f - (x_diff / 80.0f);
+            float x_diff = left_bound - sprite->x;
+            scale = 4.0f - (x_diff / width_diff);
             if (scale < 0.0f) {
                 scale = 0.0f;
             }
@@ -546,6 +559,14 @@ void newPauseSpriteCode(sprite_struct* sprite, char* render) {
     sprite->blue = brightness;
 }
 
+void totalsSprite(sprite_struct* sprite, char* render) {
+    newPauseSpriteCode(sprite, render, 1);
+}
+
+void checksSprite(sprite_struct* sprite, char* render) {
+    newPauseSpriteCode(sprite, render, 0);
+}
+
 void handleSpriteCode(int control_type) {
     /**
      * @brief Changes sprite code to be the carousel effect if the index is greater than 16
@@ -554,8 +575,10 @@ void handleSpriteCode(int control_type) {
      */
     if (control_type < 16) {
         loadSpriteFunction(0x806AC07C);
-    } else {
-        loadSpriteFunction((int)&newPauseSpriteCode);
+    } else if (control_type == 16) {
+        loadSpriteFunction((int)&totalsSprite);
+    } else if (control_type == 17) {
+        loadSpriteFunction((int)&checksSprite);
     }
 }
 
@@ -585,7 +608,7 @@ static short file_items[16] = {
     0, 0, 0, 0, // GBs, Crowns, Keys, Medals
     0, 0, 0, 0, // RW, Fairy, Nintendo, BP
     0, 0, 0, 0, // Kongs, Beans, Pearls, Rainbow
-    0, 0, 0, 0,
+    0, 0, 0, 0, // Crates
 };
 
 static int file_sprites[17] = {
@@ -601,14 +624,15 @@ static int file_sprites[17] = {
     (int)&bean_sprite, // Bean
     (int)&pearl_sprite, // Pearls
     0x80721378, // Rainbow Coins
-    0, 0, 0, 0,
+    0x80720710, // Crate
+    0, 0, 0,
     0, // Null Item, Leave Empty
 };
 static short file_item_caps[16] = {
     201, 10, 8, 40,
     1, 20, 1, 40,
     5, 1, 5, 16,
-    0, 0, 0, 0,
+    0, 0, 0, 0, // First here is Junk Items
 };
 
 void updateFileVariables(void) {
@@ -623,12 +647,16 @@ void updateFileVariables(void) {
     file_items[CHECK_BEAN] = checkFlagDuplicate(FLAG_COLLECTABLE_BEAN, FLAGTYPE_PERMANENT);
     file_items[CHECK_PEARLS] = 0;
     file_items[CHECK_RAINBOW] = 0;
+    file_items[CHECK_CRATE] = 0;
     for (int i = 0; i < 5; i++) {
         file_items[CHECK_KONG] += checkFlagDuplicate(kong_flags[i], FLAGTYPE_PERMANENT);
         file_items[CHECK_PEARLS] += checkFlagDuplicate(FLAG_PEARL_0_COLLECTED + i, FLAGTYPE_PERMANENT);
     }
     for (int i = 0; i < 16; i++) {
         file_items[CHECK_RAINBOW] += checkFlagDuplicate(FLAG_RAINBOWCOIN_0 + i, FLAGTYPE_PERMANENT);
+    }
+    for (int i = 0; i < 100; i++) {
+        file_items[CHECK_CRATE] += checkFlagDuplicate(FLAG_JUNKITEM + i, FLAGTYPE_PERMANENT);
     }
 }
 
@@ -657,9 +685,9 @@ void initPauseMenu(void) {
     *(short*)(0x806AA036) = getLo(&file_items[0]);
     *(short*)(0x806AA00E) = getHi(&file_item_caps[0]);
     *(short*)(0x806AA032) = getLo(&file_item_caps[0]);
-    *(short*)(0x806AB2CE) = getHi(&file_items[PAUSE_ITEM_COUNT]);
-    *(short*)(0x806AB2D6) = getLo(&file_items[PAUSE_ITEM_COUNT]);
-    *(short*)(0x806AB3F6) = PAUSE_ITEM_COUNT;
+    *(short*)(0x806AB2CE) = getHi(&file_items[CHECK_TERMINATOR]);
+    *(short*)(0x806AB2D6) = getLo(&file_items[CHECK_TERMINATOR]);
+    *(short*)(0x806AB3F6) = CHECK_TERMINATOR;
     if (Rando.item_rando) {
         writeFunction(0x806A9D50, &handleOutOfCounters); // Print out of counter, depending on item rando state
         writeFunction(0x806A9EFC, &handleOutOfCounters); // Print out of counter, depending on item rando state
